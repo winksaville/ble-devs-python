@@ -1,6 +1,6 @@
-# List ble devices
+# List BLE devices
 
-List BLE devices using Bleak
+List Bluetooth Low Energy (BLE) devices using Bleak
 
 Also, learned a little about how to decipher Python code as
 I was having trouble understanding the BleakScanner. 
@@ -8,6 +8,10 @@ I was having trouble understanding the BleakScanner.
 In particular I didn't find the [Bleak usage page](https://bleak.readthedocs.io/en/latest/usage.html)
 very helpful. But with help from the [bot](https://chatgpt.com/share/6883df0e-f110-800c-a1c6-62dd00e00859)
 I was able to get this working.
+
+## Setup
+
+I'm using Python 3.13 and Bleak 1.0.1 others may work
 
 ## License
 
