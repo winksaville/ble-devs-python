@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 import asyncio
 from bleak import BleakScanner
 
@@ -14,6 +15,20 @@ async def cleanup():
 async def run():
     # Import Globals
     # globals xxx
+
+    # Optional parameter
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-a", "--algorithm",
+        choices=["simple", "pretty", "s", "p"],
+        default="simple",
+        help="Algorithm to use: simple(s) or pretty(p). Default: simple"
+    )
+    args = parser.parse_args()
+
+    # Normalize abbreviations
+    algo = "simple" if args.algorithm in ["simple", "s"] else "pretty"
+    print(f"Algorithm: {algo}")
 
     try:
         print("Discovering BLE devices...")
@@ -128,32 +143,62 @@ async def run():
         # the following which convertes the second line into a filtered
         # list so that we can test if there is 0, 1 or more optional fields
         # and print them accordingly.
-        for addr, (device, adv) in devices_and_advs.items():
-            first_line = f"address: {device.address or 'Unknown Address'}, details: {device.details or 'No details'}"
-            first_line_colon = first_line.find(":")
-            print(first_line)
+        match algo:
+            case "pretty" | "p":
+                for addr, (device, adv) in devices_and_advs.items():
+                    first_line = f"address: {device.address or 'Unknown Address'}, details: {device.details or 'No details'}"
+                    first_line_colon = first_line.find(":")
+                    print(first_line)
 
-            # Second-line optional fields and none may exist in which case there is no second line
-            second_line_optional_fields = {
-                "name": device.name,
-                "uuids": adv.service_uuids,
-                # Add more optional fields here if needed
-            }
+                    # Second-line optional fields and none may exist in which case there is no second line
+                    second_line_optional_fields = {
+                        "name": device.name,
+                        "uuids": adv.service_uuids,
+                        # Add more optional fields here if needed
+                    }
 
-            # Create a filtered list of Key Value tuples for the second line
-            # it may be empty if no optional fields exist
-            filtered = [(k, v) for k, v in second_line_optional_fields.items() if v]
+                    # Create a filtered list of Key Value tuples for the second line
+                    # it may be empty if no optional fields exist
+                    filtered = [(k, v) for k, v in second_line_optional_fields.items() if v]
 
-            if filtered:
-                # Print first item with alignment
-                k, v = filtered[0]
-                print(f"{k:>{first_line_colon}}: {v!r}", end="")
+                    if filtered:
+                        # Print first item with alignment
+                        k, v = filtered[0]
+                        print(f"{k:>{first_line_colon}}: {v!r}", end="")
 
-                # Print remaining items separated by comma
-                if len(filtered) > 1:
-                    print(", " + ", ".join(f"{k}: {v!r}" for k, v in filtered[1:]))
-                else:
-                    print()
+                        # Print remaining items separated by comma
+                        if len(filtered) > 1:
+                            print(", " + "".join(f"{k}: {v!r}" for k, v in filtered[1:]))
+                        else:
+                            print()
+            case "simple" | "s":
+                # Simpler more efficient version but always prints a trailing comma
+                for addr, (device, adv) in devices_and_advs.items():
+                    first_key = "address"
+                    print(f"{first_key}: {device.address or 'Unknown Address'}, details: {device.details or 'No details'}")
+                    first_line_colon = len(first_key)
+
+                    # Second-line optional fields and none may exist in which case there is no second line
+                    second_line_optional_fields = {
+                        "name": device.name,
+                        "uuids": adv.service_uuids,
+                        # Add more optional fields here if needed
+                    }
+
+                    # Loop throught all the second line optional fields printing any that have a value
+                    # on a single line. The first item is right justified to align the colons with
+                    # the first line, the rest are not aligned. This simplified code will always
+                    # print a trailing comma if there are any optional fields, ugly but efficient.
+                    for k, v in second_line_optional_fields.items():
+                        if v:
+                            # We printed the first item right justififed to align colons
+                            print(f"{k:>{first_line_colon}}: {v!r}, ", end="")
+                            first_line_colon = 0 # for the rest we don't need to align
+                    # If we printed at least one optional field add a newline
+                    if first_line_colon == 0:
+                        print()
+            case _:
+                print("Unknown algorithm specified. Use 'simple' or 'pretty'.")
 
 
     # Handle CancelledError specifically so we can inform user
